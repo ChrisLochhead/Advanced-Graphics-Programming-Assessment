@@ -16,18 +16,21 @@ using namespace std;
 
 // Globals
 
-GLuint meshIndexCount = 0;
-GLuint toonIndexCount = 0;
-//GLuint md2VertCount = 0;
+GLuint cubeIndexCount = 0;
+GLuint bunnyIndexCount = 0;
 GLuint meshObjects[3];
 
+//shaders
+GLuint phongShaderProgram;
+GLuint refractionShaderProgram;
 GLuint textureProgram;
 GLuint shaderProgram;
 GLuint skyboxProgram;
 GLuint toonShaderProgram;
 GLuint reflectionMapProgram;
+GLuint gouraudShaderProgram;
 
-//rotation
+//camera rotation
 GLfloat r = 0.0f;
 
 // camera vectors
@@ -43,7 +46,6 @@ GLuint uniformIndex;
 // TEXTURE STUFF
 GLuint textures[3];
 GLuint skybox[5];
-GLuint labels[5];
 
 rt3d::lightStruct light0 = {
 	{ 0.4f, 0.4f, 0.4f, 1.0f }, // ambient
@@ -194,6 +196,16 @@ GLuint loadCubeMap(const char *fname[6], GLuint *texID)
 
 void init(void) {
 
+
+
+	phongShaderProgram = rt3d::initShaders("phong.vert", "phong.frag");
+	rt3d::setLight(phongShaderProgram, light0);
+	rt3d::setMaterial(phongShaderProgram, material0);
+
+	gouraudShaderProgram = rt3d::initShaders("gouraud.vert", "simple.frag");
+	rt3d::setLight(gouraudShaderProgram, light0);
+	rt3d::setMaterial(gouraudShaderProgram, material0);
+
 	shaderProgram = rt3d::initShaders("phongEnvMap.vert", "phongEnvMap.frag");
 	rt3d::setLight(shaderProgram, light0);
 	rt3d::setMaterial(shaderProgram, material0);
@@ -204,6 +216,19 @@ void init(void) {
 	glUniform1f(uniformIndex, attLinear);
 	uniformIndex = glGetUniformLocation(shaderProgram, "attQuadratic");
 	glUniform1f(uniformIndex, attQuadratic);
+
+	refractionShaderProgram = rt3d::initShaders("phongRefractionMap.vert", "phongRefractionMap.frag");
+	rt3d::setLight(shaderProgram, light0);
+	rt3d::setMaterial(shaderProgram, material0);
+	// set light attenuation shader uniforms
+	uniformIndex = glGetUniformLocation(refractionShaderProgram, "attConst");
+	glUniform1f(uniformIndex, attConstant);
+	uniformIndex = glGetUniformLocation(refractionShaderProgram, "attLinear");
+	glUniform1f(uniformIndex, attLinear);
+	uniformIndex = glGetUniformLocation(refractionShaderProgram, "attQuadratic");
+	glUniform1f(uniformIndex, attQuadratic);
+
+
 
 
 	toonShaderProgram = rt3d::initShaders("toon.vert", "toon.frag");
@@ -244,19 +269,17 @@ void init(void) {
 	vector<GLfloat> tex_coords;
 	vector<GLuint> indices;
 	rt3d::loadObj("cube.obj", verts, norms, tex_coords, indices);
-	meshIndexCount = indices.size();
+	cubeIndexCount = indices.size();
 	textures[0] = loadBitmap("fabric.bmp");
-	meshObjects[0] = rt3d::createMesh(verts.size() / 3, verts.data(), nullptr, norms.data(), tex_coords.data(), meshIndexCount, indices.data());
-	
-	//textures[1] = loadBitmap("hobgoblin2.bmp");
+	meshObjects[0] = rt3d::createMesh(verts.size() / 3, verts.data(), nullptr, norms.data(), tex_coords.data(), cubeIndexCount, indices.data());
 
 	textures[2] = loadBitmap("studdedmetal.bmp");
 
 
 	verts.clear(); norms.clear(); tex_coords.clear(); indices.clear();
 	rt3d::loadObj("bunny-5000.obj", verts, norms, tex_coords, indices);
-	toonIndexCount = indices.size();
-	meshObjects[2] = rt3d::createMesh(verts.size() / 3, verts.data(), nullptr, norms.data(), nullptr, toonIndexCount, indices.data());
+	bunnyIndexCount = indices.size();
+	meshObjects[2] = rt3d::createMesh(verts.size() / 3, verts.data(), nullptr, norms.data(), nullptr, bunnyIndexCount, indices.data());
 
 
 	glEnable(GL_DEPTH_TEST);
@@ -311,10 +334,11 @@ void update(void) {
 	if (keys[SDL_SCANCODE_H]) lightPos[1] -= 0.1; // down
 
 	//shader controls
-	if (keys[SDL_SCANCODE_1]) shaderController = 1;
-	if (keys[SDL_SCANCODE_2]) shaderController = 2;
-	if (keys[SDL_SCANCODE_3]) shaderController = 3;
-	if (keys[SDL_SCANCODE_4]) shaderController = 4;  // environment map shader
+	if (keys[SDL_SCANCODE_1]) shaderController = 1; //gouraud shader
+	if (keys[SDL_SCANCODE_2]) shaderController = 2; // phong shader
+	if (keys[SDL_SCANCODE_3]) shaderController = 3; // toon shader
+	if (keys[SDL_SCANCODE_4]) shaderController = 4; // environment map shader
+	if (keys[SDL_SCANCODE_5]) shaderController = 5; // refraction map shader
 
 	if (keys[SDL_SCANCODE_COMMA]) r -= 1.0f;
 	if (keys[SDL_SCANCODE_PERIOD]) r += 1.0f;
@@ -332,21 +356,65 @@ void update(void) {
 
 }
 
-void drawGouraud();
-void drawPhong();
+void drawGouraud(glm::vec4 tmp, glm::mat4 projection)
+{
+	// draw the Gouraud shaded bunny
+	glUseProgram(gouraudShaderProgram);
+
+	//set the light and projection matrices to the shader
+	rt3d::setLightPos(gouraudShaderProgram, glm::value_ptr(tmp));
+	rt3d::setUniformMatrix4fv(gouraudShaderProgram, "projection", glm::value_ptr(projection));
+
+	//set modelview
+	mvStack.push(mvStack.top());
+	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-2.0f, 1.0f, -3.0f));
+	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
+	rt3d::setUniformMatrix4fv(gouraudShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+
+	//set material and draw the object
+	rt3d::setMaterial(gouraudShaderProgram, material0);
+	rt3d::drawIndexedMesh(meshObjects[2], bunnyIndexCount, GL_TRIANGLES);
+	mvStack.pop();
+}
+void drawPhong(glm::vec4 tmp, glm::mat4 projection)
+{
+	// draw the Phong shaded bunny
+	glUseProgram(phongShaderProgram);
+
+	//set the light and projection matrices to the shader
+	rt3d::setLightPos(phongShaderProgram, glm::value_ptr(tmp));
+	rt3d::setUniformMatrix4fv(phongShaderProgram, "projection", glm::value_ptr(projection));
+
+	//set modelview
+	mvStack.push(mvStack.top());
+	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-2.0f, 1.0f, -3.0f));
+	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
+	rt3d::setUniformMatrix4fv(phongShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+
+	//set material and draw the object
+	rt3d::setMaterial(phongShaderProgram, material0);
+	rt3d::drawIndexedMesh(meshObjects[2], bunnyIndexCount, GL_TRIANGLES);
+	mvStack.pop();
+}
 void drawToon(glm::vec4 tmp, glm::mat4 projection)
 {
 
 	// draw the toon shaded bunny
 	glUseProgram(toonShaderProgram);
+
+	//set the light and projection matrices to the shader
 	rt3d::setLightPos(toonShaderProgram, glm::value_ptr(tmp));
 	rt3d::setUniformMatrix4fv(toonShaderProgram, "projection", glm::value_ptr(projection));
+
+	//set modelview
 	mvStack.push(mvStack.top());
 	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-2.0f, 1.0f, -3.0f));
 	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
 	rt3d::setUniformMatrix4fv(toonShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+
+	//set material and draw the object
 	rt3d::setMaterial(toonShaderProgram, material0);
-	rt3d::drawIndexedMesh(meshObjects[2], toonIndexCount, GL_TRIANGLES);
+	rt3d::drawIndexedMesh(meshObjects[2], bunnyIndexCount, GL_TRIANGLES);
 	mvStack.pop();
 
 }
@@ -356,10 +424,7 @@ void drawMapped(glm::vec4 tmp, glm::mat4 projection)
 	glUseProgram(reflectionMapProgram);
 	rt3d::setUniformMatrix4fv(reflectionMapProgram, "projection", glm::value_ptr(projection));
 
-	tmp = mvStack.top()*lightPos;
-	light0.position[0] = tmp.x;
-	light0.position[1] = tmp.y;
-	light0.position[2] = tmp.z;
+	//pass the light and pass it to the shader
 	rt3d::setLightPos(reflectionMapProgram, glm::value_ptr(tmp));
 
 	glBindTexture(GL_TEXTURE_2D, textures[2]);
@@ -369,6 +434,7 @@ void drawMapped(glm::vec4 tmp, glm::mat4 projection)
 	rt3d::setUniformMatrix4fv(reflectionMapProgram, "modelview", glm::value_ptr(mvStack.top()));
 	rt3d::setMaterial(reflectionMapProgram, material1);
 
+	//find the model matrix for the reflection shader
 	glm::mat4 modelMatrix(1.0);
 	mvStack.push(mvStack.top());
 	modelMatrix = glm::translate(modelMatrix, glm::vec3(-2.0f, 1.0f, -3.0f));
@@ -376,13 +442,44 @@ void drawMapped(glm::vec4 tmp, glm::mat4 projection)
 	mvStack.top() = mvStack.top() * modelMatrix;
 	rt3d::setUniformMatrix4fv(reflectionMapProgram, "modelMatrix", glm::value_ptr(mvStack.top()));
 
-	rt3d::drawIndexedMesh(meshObjects[2], toonIndexCount, GL_TRIANGLES);
+	//draw the object
+	rt3d::drawIndexedMesh(meshObjects[2], bunnyIndexCount, GL_TRIANGLES);
 
+	//two pops for both pushes
 	mvStack.pop();
-
 	mvStack.pop();
 }
-void drawRefracted();
+void drawRefracted(glm::vec4 tmp, glm::mat4 projection)
+{
+	// draw a rotating cube to be environment/reflection mapped (now the bunny)
+	glUseProgram(refractionShaderProgram);
+	rt3d::setUniformMatrix4fv(refractionShaderProgram, "projection", glm::value_ptr(projection));
+
+	//pass the light and pass it to the shader
+	rt3d::setLightPos(refractionShaderProgram, glm::value_ptr(tmp));
+
+	glBindTexture(GL_TEXTURE_2D, textures[2]);
+	mvStack.push(mvStack.top());
+	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-2.0f, 1.0f, -3.0f));
+	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 20.0f, 20.0f));
+	rt3d::setUniformMatrix4fv(refractionShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+	rt3d::setMaterial(refractionShaderProgram, material1);
+
+	//find the model matrix for the reflection shader
+	glm::mat4 modelMatrix(1.0);
+	mvStack.push(mvStack.top());
+	modelMatrix = glm::translate(modelMatrix, glm::vec3(-2.0f, 1.0f, -3.0f));
+	modelMatrix = glm::scale(modelMatrix, glm::vec3(20.0f, 20.0f, 20.0f));
+	mvStack.top() = mvStack.top() * modelMatrix;
+	rt3d::setUniformMatrix4fv(refractionShaderProgram, "modelMatrix", glm::value_ptr(mvStack.top()));
+
+	//draw the object
+	rt3d::drawIndexedMesh(meshObjects[2], bunnyIndexCount, GL_TRIANGLES);
+
+	//two pops for both pushes
+	mvStack.pop();
+	mvStack.pop();
+}
 
 void draw(SDL_Window * window) {
 	// clear the screen
@@ -392,9 +489,6 @@ void draw(SDL_Window * window) {
 
 	glm::mat4 projection(1.0);
 	projection = glm::perspective(float(60.0f*DEG_TO_RADIAN), 800.0f / 600.0f, 1.0f, 150.0f);
-
-
-	GLfloat scale(1.0f); // just to allow easy scaling of complete scene
 
 	glm::mat4 modelview(1.0); // set base position for scene
 	mvStack.push(modelview);
@@ -414,7 +508,7 @@ void draw(SDL_Window * window) {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
 	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(1.5f, 1.5f, 1.5f));
 	rt3d::setUniformMatrix4fv(skyboxProgram, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
+	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
 	mvStack.pop();
 	glCullFace(GL_BACK); // drawing inside of cube!
 
@@ -439,7 +533,7 @@ void draw(SDL_Window * window) {
 	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.25f, 0.25f, 0.25f));
 	rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
 	rt3d::setMaterial(shaderProgram, material0);
-	rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
+	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
 	mvStack.pop();
 
 	// draw a cube for ground plane
@@ -449,30 +543,28 @@ void draw(SDL_Window * window) {
 	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 0.1f, 20.0f));
 	rt3d::setUniformMatrix4fv(shaderProgram, "modelview", glm::value_ptr(mvStack.top()));
 	rt3d::setMaterial(shaderProgram, material0);
-	rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
+	rt3d::drawIndexedMesh(meshObjects[0], cubeIndexCount, GL_TRIANGLES);
 	mvStack.pop();
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	if (shaderController == 4) {
-		drawMapped(tmp, projection);
-	}
-	if (shaderController == 3)
-	{
-		drawToon(tmp, projection);
-	}
 
-	// remember to use at least one pop operation per push...
+	//draw according to which shader is being utilised
+	if (shaderController == 1) drawGouraud(tmp, projection);
+	if (shaderController == 2) drawPhong(tmp, projection);
+	if (shaderController == 3) drawToon(tmp, projection);
+	if (shaderController == 4) drawMapped(tmp, projection);
+	if (shaderController == 5) drawRefracted(tmp, projection);
+
 	mvStack.pop(); // initial matrix
 	glDepthMask(GL_TRUE);
-
 
 	SDL_GL_SwapWindow(window); // swap buffers
 
 }
 
 
-// Program entry point - SDL manages the actual WinMain entry point for us
+// Program entry point
 int main(int argc, char *argv[]) {
 	SDL_Window * hWindow; // window handle
 	SDL_GLContext glContext; // OpenGL context handle

@@ -22,9 +22,6 @@
     <Filter Include="Resource Files\Phong">
       <UniqueIdentifier>{87dab22c-87ce-4b25-976b-aff658f7638d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\ReflectionMap">
-      <UniqueIdentifier>{ea817ae7-3b4c-41fe-be1b-4f7298d0d294}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files\Gouraud">
       <UniqueIdentifier>{7ce345d2-aada-4c87-adad-8427ee331963}</UniqueIdentifier>
     </Filter>
@@ -36,6 +33,12 @@
     </Filter>
     <Filter Include="Source Files\RT3D src">
       <UniqueIdentifier>{b113708a-4900-413b-aee0-d1695a6f6fd8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\RefractionMap">
+      <UniqueIdentifier>{ea817ae7-3b4c-41fe-be1b-4f7298d0d294}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\ReflectionMap">
+      <UniqueIdentifier>{04dd38a2-94c2-4946-9ddb-0d75254dabbf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -70,12 +73,6 @@
     <None Include="phong.frag">
       <Filter>Resource Files\Phong</Filter>
     </None>
-    <None Include="phongEnvMap.frag">
-      <Filter>Resource Files\ReflectionMap</Filter>
-    </None>
-    <None Include="phongEnvMap.vert">
-      <Filter>Resource Files\ReflectionMap</Filter>
-    </None>
     <None Include="simple.frag">
       <Filter>Resource Files\Gouraud</Filter>
     </None>
@@ -93,6 +90,18 @@
     </None>
     <None Include="toon.vert">
       <Filter>Resource Files\Cartoon</Filter>
+    </None>
+    <None Include="phongEnvMap.frag">
+      <Filter>Resource Files\ReflectionMap</Filter>
+    </None>
+    <None Include="phongEnvMap.vert">
+      <Filter>Resource Files\ReflectionMap</Filter>
+    </None>
+    <None Include="phongRefractionMap.frag">
+      <Filter>Resource Files\RefractionMap</Filter>
+    </None>
+    <None Include="phongRefractionMap.vert">
+      <Filter>Resource Files\RefractionMap</Filter>
     </None>
   </ItemGroup>
 </Project>

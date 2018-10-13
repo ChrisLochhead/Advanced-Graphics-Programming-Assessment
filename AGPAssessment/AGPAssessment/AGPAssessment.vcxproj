@@ -76,7 +76,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Dev\glm;C:\Dev\SDL2-2.0.8\include;C:\Dev\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Dev\New folder\glm;C:\Dev\SDL2-2.0.8\include;C:\Dev\glew-2.1.0\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:\Dev\SDL2-2.0.8\VisualC\Win32\Debug;C:\Dev\glew-2.1.0\lib\Debug\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -136,6 +136,8 @@
     <None Include="phong.vert" />
     <None Include="phongEnvMap.frag" />
     <None Include="phongEnvMap.vert" />
+    <None Include="phongRefractionMap.frag" />
+    <None Include="phongRefractionMap.vert" />
     <None Include="simple.frag" />
     <None Include="textured.frag" />
     <None Include="textured.vert" />
