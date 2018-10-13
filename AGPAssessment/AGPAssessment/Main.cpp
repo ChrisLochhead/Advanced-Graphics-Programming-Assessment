@@ -10,6 +10,7 @@
 #include <stack>
 
 
+
 using namespace std;
 
 #define DEG_TO_RADIAN 0.017453293
@@ -197,7 +198,6 @@ GLuint loadCubeMap(const char *fname[6], GLuint *texID)
 void init(void) {
 
 
-
 	phongShaderProgram = rt3d::initShaders("phong.vert", "phong.frag");
 	rt3d::setLight(phongShaderProgram, light0);
 	rt3d::setMaterial(phongShaderProgram, material0);
@@ -281,6 +281,25 @@ void init(void) {
 	bunnyIndexCount = indices.size();
 	meshObjects[2] = rt3d::createMesh(verts.size() / 3, verts.data(), nullptr, norms.data(), nullptr, bunnyIndexCount, indices.data());
 
+	//create vertice buffer
+	unsigned int vertbuffer;
+	glGenBuffers(1, &vertbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vertbuffer);
+	glBufferData(GL_ARRAY_BUFFER, verts.size() * sizeof(float), verts.data(), GL_STATIC_DRAW);
+
+	//set vertice buffer to attribute 0
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+
+	//create normal buffer
+	unsigned int normbuffer;
+	glGenBuffers(1, &normbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normbuffer);
+	glBufferData(GL_ARRAY_BUFFER, norms.size() * sizeof(float), norms.data(), GL_STATIC_DRAW);
+
+	//set normal buffer to 2 (defined in RT3D header file)
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE , sizeof(float) * 2, 0);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);

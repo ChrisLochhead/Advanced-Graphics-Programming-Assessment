@@ -82,6 +82,7 @@ GLuint initShaders(const char *vertFile, const char *fragFile) {
 	GLuint p, f, v;
 
 	char *vs,*fs;
+	const char *gouraudfile = "gouraud.vert";
 
 	v = glCreateShader(GL_VERTEX_SHADER);
 	f = glCreateShader(GL_FRAGMENT_SHADER);	
@@ -118,11 +119,13 @@ GLuint initShaders(const char *vertFile, const char *fragFile) {
 		
 	glAttachShader(p,v);
 	glAttachShader(p,f);
+	if (*vertFile != *gouraudfile) {  // to show gouraud shading attributes are set using the layout(location = x) method
+		glBindAttribLocation(p, RT3D_VERTEX, "in_Position");
+		glBindAttribLocation(p, RT3D_NORMAL, "in_Normal");
+	}
 
-	glBindAttribLocation(p,RT3D_VERTEX,"in_Position");
-	glBindAttribLocation(p,RT3D_COLOUR,"in_Color");
-	glBindAttribLocation(p,RT3D_NORMAL,"in_Normal");
-	glBindAttribLocation(p,RT3D_TEXCOORD,"in_TexCoord");
+		glBindAttribLocation(p, RT3D_COLOUR, "in_Color");
+		glBindAttribLocation(p, RT3D_TEXCOORD, "in_TexCoord");
 
 	glLinkProgram(p);
 	glUseProgram(p);

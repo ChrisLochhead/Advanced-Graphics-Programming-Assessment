@@ -25,9 +25,13 @@ uniform lightStruct light;
 uniform materialStruct material;
 uniform vec4 lightPosition;
 
-in  vec3 in_Position;
-//in  vec3 in_Colour; // colour not used with lighting
-in  vec3 in_Normal;
+
+layout(location = 0) in vec3 in_Position;
+layout(location = 2) in vec3 in_Normal;
+
+
+//in  vec3 in_Position;
+//in  vec3 in_Normal;
 out vec4 ex_Color;
 
 // phong shader program
