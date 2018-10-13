@@ -301,6 +301,24 @@ void init(void) {
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE , sizeof(float) * 2, 0);
 
+
+	// Binding the vertex
+	glBindBuffer(GL_ARRAY_BUFFER, vertbuffer);
+	glVertexPointer(3, GL_FLOAT, sizeof(float) * 3, NULL); // Vertex start position address
+
+
+	//create an interleaved vnc buffer
+	unsigned int vncBuffer;
+	glGenBuffers(1, &vncBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, vncBuffer);
+	glBufferData(GL_ARRAY_BUFFER, verts.size() * 10 * sizeof(float), NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, verts.size() * 3, verts.data());  // add vertice data
+	glBufferSubData(GL_ARRAY_BUFFER, verts.size() * 3 * sizeof(float), verts.size() * 3 * sizeof(float), norms.data()); // then normal data
+	glBufferSubData(GL_ARRAY_BUFFER, verts.size() * 3 * sizeof(float), verts.size() * 4 * sizeof(float), tex_coords.data()); // then color data
+
+
+
+
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
