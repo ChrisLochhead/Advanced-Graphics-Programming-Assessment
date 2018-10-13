@@ -1,0 +1,7 @@
+*.obj
+*.dll
+*.bmp
+AGPAssessment/AGPAssessment/town-skybox/
+AGPAssessment/Debug/*
+AGPAssessment/AGPAssessment/Debug/*
+AGPAssessment/.vs/*
